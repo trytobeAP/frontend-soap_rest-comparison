@@ -1,8 +1,4 @@
-import type {
-  Student,
-  CreateStudentDto,
-  RequestMetrics,
-} from "@/types/student";
+import type { CreateStudentDto, RequestMetrics } from "@/types/student";
 
 const API_URL = "http://localhost:8000/api/students";
 
