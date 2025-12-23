@@ -160,25 +160,45 @@
               no-gutters
               align="center"
             >
+              <!-- 1. Метод -->
               <v-col
-                cols="4"
+                cols="3"
                 class="font-weight-bold text-caption text-uppercase"
               >
                 {{ log.method }}
               </v-col>
+
+              <!-- 2. Общее время -->
               <v-col
-                cols="4"
+                cols="3"
                 class="text-caption"
+                title="Total Duration"
               >
                 <v-icon
                   icon="mdi-clock-outline"
                   size="small"
                   class="mr-1"
                 />
-                {{ log.duration.toFixed(2) }} ms
+                {{ log.duration.toFixed(0) }}ms
               </v-col>
+
+              <!-- 3. Время парсинга (JS) -->
               <v-col
-                cols="4"
+                cols="3"
+                class="text-caption text-blue-grey-darken-2"
+                title="JS Processing Time"
+              >
+                <v-icon
+                  icon="mdi-cpu-64-bit"
+                  size="small"
+                  class="mr-1"
+                />
+                <strong>{{ log.parsingTime.toFixed(2) }}ms</strong>
+              </v-col>
+
+              <!-- 4. Размер -->
+              <v-col
+                cols="3"
                 class="text-caption text-right"
               >
                 <v-icon
@@ -186,7 +206,7 @@
                   size="small"
                   class="mr-1"
                 />
-                {{ log.dataSize }} B
+                {{ (log.dataSize / 1024).toFixed(1) }} KB
               </v-col>
             </v-row>
           </v-expansion-panel-title>

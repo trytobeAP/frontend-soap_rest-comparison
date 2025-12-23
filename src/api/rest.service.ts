@@ -7,51 +7,35 @@ import type {
 const API_URL = "http://localhost:8000/api/students";
 
 // ==========================================
-// 1. ЧИСТЫЙ CRUD (То, что ты хотел оставить)
-// ==========================================
-const pureRestService = {
-  async getAll(): Promise<Student[]> {
-    const res = await fetch(API_URL);
-    return await res.json();
-  },
-
-  async create(student: CreateStudentDto): Promise<Student> {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(student),
-    });
-    return await res.json();
-  },
-
-  async delete(id: number): Promise<void> {
-    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-  },
-};
-
-// ==========================================
-// 2. ХЕЛПЕР ДЛЯ ЗАМЕРОВ (Специфика курсовой)
+// 1. ХЕЛПЕР ДЛЯ ЗАМЕРОВ (Специфика курсовой)
 // ==========================================
 async function measure<T>(
   label: string,
-  action: () => Promise<T>,
+  requestAction: () => Promise<Response>,
 ): Promise<{ data: T; metrics: RequestMetrics }> {
-  const start = performance.now();
+  const startTotal = performance.now();
 
-  // Выполняем чистое действие
-  const data = await action();
+  // 1. СЕТЬ (Скачиваем текст, но не парсим в объект)
+  const response = await requestAction();
+  const textData = await response.text();
 
-  const end = performance.now();
+  // 2. ЗАМЕР ПАРСИНГА
+  const startParse = performance.now();
+  const jsonData = JSON.parse(textData); // Вот это нативная скорость V8
+  const endParse = performance.now();
 
-  // Пытаемся оценить размер данных (грубо, переводя обратно в строку)
-  const rawString = JSON.stringify(data, null, 2);
+  const endTotal = performance.now();
+
+  // Для красоты в UI
+  const rawString = JSON.stringify(jsonData, null, 2);
 
   return {
-    data,
+    data: jsonData,
     metrics: {
       method: label,
       protocol: "REST",
-      duration: end - start,
+      duration: endTotal - startTotal,
+      parsingTime: endParse - startParse, // У REST это будет почти 0
       dataSize: rawString.length,
       rawResponse: rawString,
     },
@@ -59,7 +43,7 @@ async function measure<T>(
 }
 
 // ==========================================
-// 3. ЭКСПОРТ ДЛЯ UI (Адаптер)
+// 2. ЭКСПОРТ ДЛЯ UI (Адаптер)
 // ==========================================
 /* 
    App.vue импортирует именно это. 
@@ -67,11 +51,17 @@ async function measure<T>(
    а внутри мы вызываем чистый pureRestService.
 */
 export const restService = {
-  getAll() {
-    return measure("Get List", () => pureRestService.getAll());
+  async getAll() {
+    return measure("Get List", () => fetch(API_URL));
   },
 
-  create(student: CreateStudentDto) {
-    return measure("Create", () => pureRestService.create(student));
+  async create(student: CreateStudentDto) {
+    return measure("Create", () =>
+      fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(student),
+      }),
+    );
   },
 };
